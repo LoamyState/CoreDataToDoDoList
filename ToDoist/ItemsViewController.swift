@@ -91,13 +91,17 @@ private extension ItemsViewController {
     
     func generateNewSnapshot() {
         var snapshot = NSDiffableDataSourceSnapshot<TableSection, Item>()
-        if !itemManager.items.isEmpty {
+        
+        let incompleteItems = itemManager.fetchIncompleteItems()
+        let completedItems = itemManager.fetchCompletedItems()
+        
+        if !incompleteItems.isEmpty {
             snapshot.appendSections([.incomplete])
-            snapshot.appendItems(itemManager.items, toSection: .incomplete)
+            snapshot.appendItems(incompleteItems, toSection: .incomplete)
         }
-        if !itemManager.completedItems.isEmpty {
+        if !completedItems.isEmpty {
             snapshot.appendSections([.complete])
-            snapshot.appendItems(itemManager.completedItems, toSection: .complete)
+            snapshot.appendItems(completedItems, toSection: .complete)
         }
         DispatchQueue.main.async {
             self.datasource.apply(snapshot)

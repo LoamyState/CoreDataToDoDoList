@@ -38,6 +38,7 @@ class ItemTableViewCell: UITableViewCell {
     @IBAction func completeButtonPressed(_ sender: Any) {
         guard let item else { return }
         delegate?.completeButtonPressed(item: item)
+        update(with: item)
     }
     
 }
