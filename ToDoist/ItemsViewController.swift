@@ -20,8 +20,9 @@ class ItemsViewController: UIViewController {
     
     
     // MARK: - Properties
-    
+
     private let itemManager = ItemManager.shared
+    private let toDoList: ToDoList
     private lazy var datasource: ItemDataSource = {
         let datasource = ItemDataSource(tableView: tableView) { tableView, indexPath, item in
             let cell = tableView.dequeueReusableCell(withIdentifier: ItemTableViewCell.reuseIdentifier) as! ItemTableViewCell
@@ -33,6 +34,17 @@ class ItemsViewController: UIViewController {
         return datasource
     }()
 
+    // MARK: - Initializers
+    
+    init?(coder: NSCoder, toDoList: ToDoList) {
+        self.toDoList = toDoList
+        
+        super.init(coder: coder)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("Use init:(coder:toDoList:) to initialize ItemsViewController")
+    }
     
     // MARK: - Lifecycle
     
@@ -63,8 +75,19 @@ extension ItemsViewController: ItemCellDelegate {
 extension ItemsViewController: ItemDelegate {
     
     func deleteItem(at indexPath: IndexPath) {
-        ItemManager.shared.delete(at: indexPath)
+        let itemToDelete = item(at: indexPath)
+        ItemManager.shared.delete(item: itemToDelete)
         generateNewSnapshot()
+    }
+    
+    func item(at indexPath: IndexPath) -> Item {
+        let section = TableSection(rawValue: indexPath.section)!
+        switch section {
+        case .incomplete:
+            return ItemManager.shared.incompleteItems(of: toDoList)[indexPath.row]
+        case .complete:
+            return ItemManager.shared.completedItems(of: toDoList)[indexPath.row]
+        }
     }
     
 }
@@ -76,7 +99,7 @@ extension ItemsViewController: UITextFieldDelegate {
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         guard let text = textField.text, !text.isEmpty else { return true }
-        itemManager.createNewItem(with: text)
+        itemManager.createNewItem(with: text, in: toDoList)
         textField.text = ""
         generateNewSnapshot()
         return true
@@ -92,8 +115,8 @@ private extension ItemsViewController {
     func generateNewSnapshot() {
         var snapshot = NSDiffableDataSourceSnapshot<TableSection, Item>()
         
-        let incompleteItems = itemManager.fetchIncompleteItems()
-        let completedItems = itemManager.fetchCompletedItems()
+        let incompleteItems = ItemManager.shared.incompleteItems(of: toDoList)
+        let completedItems = ItemManager.shared.completedItems(of: toDoList)
         
         if !incompleteItems.isEmpty {
             snapshot.appendSections([.incomplete])
